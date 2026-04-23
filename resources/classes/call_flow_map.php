@@ -14,9 +14,9 @@
 	License.
 */
 
-class call_flow_diagram {
+class call_flow_map {
 
-	const app_name = 'call_flow_diagram';
+	const app_name = 'call_flow_map';
 	const app_uuid = 'd7c4f2a1-8b3e-4f9d-bc12-5a6e7890abcd';
 
 	private $database;

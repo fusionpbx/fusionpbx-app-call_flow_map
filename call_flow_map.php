@@ -22,7 +22,7 @@
 	require_once "resources/check_auth.php";
 
 //check permissions — accept registered permission OR admin/superadmin group membership
-	if (!permission_exists('call_flow_diagram_view') && !if_group("superadmin") && !if_group("admin") && !if_group("user")) {
+	if (!permission_exists('call_flow_map_view') && !if_group("superadmin") && !if_group("admin") && !if_group("user")) {
 		echo "access denied";
 		exit;
 	}
@@ -32,10 +32,10 @@
 	$text = $language->get();
 
 //load class
-	require_once __DIR__ . "/resources/classes/call_flow_diagram.php";
+	require_once __DIR__ . "/resources/classes/call_flow_map.php";
 
 //initialize the diagram builder
-	$diagram = new call_flow_diagram([
+	$diagram = new call_flow_map([
 		'domain_uuid' => $domain_uuid,
 		'domain_name' => $_SESSION['domain_name'] ?? '',
 		'database'    => $database,
@@ -78,8 +78,9 @@
 	}
 
 //page title
-	$document['title'] = $text['title-call_flow_diagram'] ?? 'Call Flow Diagram';
+	$document['title'] = $text['title-call_flow_map'] ?? 'Call Flow Diagram';
 	require_once "resources/header.php";
+
 ?>
 
 <!-- vis-network from CDN -->
@@ -154,7 +155,7 @@ echo modal::create([
 ?>
 
 <div class="action_bar" id="action_bar">
-	<div class="heading"><b><?php echo $text['title-call_flow_diagram'] ?? 'Call Flow Diagram'; ?></b></div>
+	<div class="heading"><b><?php echo $text['title-call_flow_map'] ?? 'Call Flow Diagram'; ?></b></div>
 	<div class="actions">
 		<?php
 		echo button::create(['type'=>'button','label'=>$text['label-fit_view']??'Fit View',       'icon'=>'compress-arrows-alt','id'=>'btn-fit','collapse'=>'hide-xs','style'=>'display: none;','onclick'=>'fitDiagram()']);
@@ -164,7 +165,7 @@ echo modal::create([
 	<div style="clear:both;"></div>
 </div>
 
-<?php echo isset($text['description-call_flow_diagram']) ? '<p>'.$text['description-call_flow_diagram'].'</p><br>' : ''; ?>
+<?php echo isset($text['description-call_flow_map']) ? '<p>'.$text['description-call_flow_map'].'</p><br>' : ''; ?>
 
 <!-- ── Picker form ─────────────────────────────────────────────────── -->
 <div class="card" style="margin-bottom: 16px;">
@@ -448,7 +449,7 @@ function doDownloadPng(withBackground) {
 	ctx.drawImage(src, 0, 0);
 
 	var link = document.createElement('a');
-	link.download = 'call_flow_diagram.png';
+	link.download = 'call_flow_map.png';
 	link.href = canvas.toDataURL('image/png');
 	link.click();
 }
