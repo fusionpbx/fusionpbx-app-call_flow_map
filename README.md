@@ -1,12 +1,12 @@
-# Call Flow Diagram for FusionPBX
-A visual call flow diagram app for [FusionPBX](https://www.fusionpbx.com). Select any starting point
- - inbound route
- - IVR menu
- - ring group
- - call flow
- - time condition
- - extension
- - call center
+# Call Flow Map
+A visual call flow map application for [FusionPBX](https://www.fusionpbx.com). Select any starting point
+ - Inbound Route
+ - IVR Menu
+ - Ring group
+ - Call flow
+ - Time Condition
+ - Extension
+ - Call Center
 and the app traces the full routing path and renders it as an interactive diagram.
 
 ## Features
@@ -30,7 +30,7 @@ SSH into your FusionPBX server and clone the app into the FusionPBX apps directo
 
 ```bash
 cd /var/www/fusionpbx/app
-git clone https://github.com/tony1661/fusionpbx-app-call_flow_diagram call_flow_diagram
+git clone https://github.com/fusionpbx/fusionpbx-app-call_flow_map.git call_flow_map
 ```
 
 ### 2. Set ownership
@@ -38,7 +38,7 @@ git clone https://github.com/tony1661/fusionpbx-app-call_flow_diagram call_flow_
 Make sure the web server user owns the new directory:
 
 ```bash
-chown -R www-data:www-data /var/www/fusionpbx/app/call_flow_diagram
+chown -R www-data:www-data /var/www/fusionpbx/app/app/call_flow_map
 ```
 
 > If your server uses a different web user (e.g. `nginx` or `apache`), replace `www-data` accordingly.
@@ -65,7 +65,7 @@ The following permission is registered automatically during the App Defaults ste
 
 | Permission | Default Groups |
 |---|---|
-| `call_flow_diagram_view` | superadmin, admin, user |
+| `call_flow_map_view` | superadmin, admin, user |
 
 Access can be adjusted per group in **Advanced → Group Manager**.
 
