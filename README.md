@@ -38,7 +38,7 @@ git clone https://github.com/fusionpbx/fusionpbx-app-call_flow_map.git call_flow
 Make sure the web server user owns the new directory:
 
 ```bash
-chown -R www-data:www-data /var/www/fusionpbx/app/app/call_flow_map
+chown -R www-data:www-data /var/www/fusionpbx/app/call_flow_map
 ```
 
 > If your server uses a different web user (e.g. `nginx` or `apache`), replace `www-data` accordingly.
@@ -49,7 +49,7 @@ Log into the FusionPBX web interface as a superadmin, then go to:
 
 **Advanced → Upgrade**
 
-Click **App Defaults** to register the app's menu entry and permissions. This step adds the *Call Flow Diagram* entry to the **Reports** menu and grants access to the appropriate groups.
+Click **App Defaults** to register the app's menu entry and permissions. This step adds the *Call Flow Diagram* entry to the **Status** menu and grants access to the appropriate groups.
 
 ### 4. Reload the menu
 
