@@ -21,8 +21,8 @@
 	require_once dirname(__DIR__, 2) . "/resources/require.php";
 	require_once "resources/check_auth.php";
 
-//check permissions — accept registered permission OR admin/superadmin group membership
-	if (!permission_exists('call_flow_map_view') && !if_group("superadmin") && !if_group("admin") && !if_group("user")) {
+//check permissions
+	if (!permission_exists('call_flow_map_view')) {
 		echo "access denied";
 		exit;
 	}
