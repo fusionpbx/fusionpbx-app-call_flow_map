@@ -45,10 +45,10 @@
 	$starting_points = $diagram->get_starting_points();
 
 //handle AJAX data request
-	if (!empty($_GET['ajax']) && !empty($_GET['type']) && !empty($_GET['uuid'])) {
+	if (!empty($_GET['ajax']) && !empty($_GET['type']) && !empty($_GET['id'])) {
 		header('Content-Type: application/json');
 		$type = preg_replace('/[^a-z_]/', '', $_GET['type']);
-		$uuid = $_GET['uuid'];
+		$uuid = $_GET['id'];
 		if (!is_uuid($uuid)) {
 			echo json_encode(['error' => 'Invalid UUID']);
 			exit;
@@ -60,7 +60,7 @@
 
 //selected type/uuid from GET
 	$selected_type = $_GET['type'] ?? '';
-	$selected_uuid = $_GET['uuid'] ?? '';
+	$selected_uuid = $_GET['id'] ?? '';
 
 //validate
 	if (!empty($selected_type)) {
@@ -144,128 +144,117 @@
 </style>
 
 <?php
+
 echo modal::create([
 	'id'      => 'modal-png-export',
 	'type'    => 'general',
-	'title'   => $text['label-png_background'],
-	'actions' =>
-		button::create(['type'=>'button','label'=>'White',       'icon'=>'square',       'id'=>'btn-png-white',        'collapse'=>'never','onclick'=>"modal_close(); doDownloadPng(true);"]).
-		button::create(['type'=>'button','label'=>'Transparent', 'icon'=>'border-all',   'id'=>'btn-png-transparent',  'collapse'=>'never','onclick'=>"modal_close(); doDownloadPng(false);"]),
+	'title'   => $text['label-png_background'] ?? '',
+	'actions' => button::create(['type'=>'button','label'=>$text['label-white'] ?? 'White','icon'=>'square','id'=>'btn-png-white','collapse'=>'never','onclick'=>"modal_close(); dodownload_png(true);"]).
+	button::create(['type'=>'button','label'=>$text['label-transparent'] ?? 'Transparent','icon'=>'border-all','id'=>'btn-png-transparent','collapse'=>'never','onclick'=>"modal_close(); dodownload_png(false);"])
 ]);
+
+echo "<div class='action_bar' id='action_bar'>\n";
+echo "	<div class='heading'><b>".escape($text['title-call_flow_map'] ?? '')."</b></div>\n";
+echo "	<div class='actions'>\n";
+echo button::create(['type'=>'button','label'=>$text['label-fit_view'],       'icon'=>'compress-arrows-alt','id'=>'btn-fit','collapse'=>'hide-xs','style'=>'display: none;','onclick'=>'fit_diagram()']);
+echo button::create(['type'=>'button','label'=>$text['label-download_png'],'icon'=>'download',           'id'=>'btn-png','collapse'=>'hide-xs','style'=>'display: none;','onclick'=>'download_png()']);
+echo "	</div>\n";
+echo "	<div style='clear:both;'></div>\n";
+echo "</div>\n";
+
+echo escape($text['description-call_flow_map'])."\n";
+echo "<br /><br />\n";
+
+echo "<form name='frm' id='picker-form' method='get'>\n";
+echo "	<div class='card' style='margin-bottom: 16px;'>\n";
+
+echo "		<div style='display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;'>\n";
+echo "			<div>\n";
+echo "				<label class='lbl' for='sel-type' style='display:block; margin-bottom:4px;'>".$text['label-starting_type']."</label>\n";
+echo "				<select id='sel-type' name='type' class='formfld' style='min-width:170px;' onchange='populateDestinations(this.value);'>\n";
+echo "					<option value=''>-- select type --</option>\n";
+$types = [
+	'inbound'        => $text['label-inbound_routes'],
+	'ivr'            => $text['label-ivr_menus'],
+	'ring_group'     => $text['label-ring_groups'],
+	'call_flow'      => $text['label-call_flows'],
+	'time_condition' => $text['label-time_conditions'],
+	'extension'      => $text['label-extensions'],
+	'contact_center' => $text['label-contact_centers'],
+];
+foreach ($types as $tkey => $tlabel) {
+	$selected = ($selected_type === $tkey) ? ' selected' : '';
+	echo "				<option value='".escape($tkey)."' $selected>".escape($tlabel)."</option>\n";
+}
+echo "				</select>\n";
+echo "			</div>\n";
+
+echo "			<div>\n";
+echo "				<label class='lbl' for='sel-uuid' style='display:block; margin-bottom:4px;'>".$text['label-starting_destination']."</label>\n";
+echo "				<select id='sel-uuid' name='id' class='formfld' style='min-width:280px;'>\n";
+echo "					<option value=''>-- select destination --</option>\n";
+// Pre-populate if type is already selected
+if (!empty($selected_type) && !empty($starting_points[$selected_type])) {
+	foreach ($starting_points[$selected_type] as $sp) {
+		$selected2 = ($selected_uuid === $sp['uuid']) ? ' selected' : '';
+		echo "<option value='".escape($sp['uuid'])."' $selected2>".escape($sp['label'])."</option>\n";
+
+	}
+}
+echo "				</select>\n";
+echo "			</div>\n";
+
+echo "			<div>\n";
+echo button::create(['type'=>'submit','label'=>$text['button-generate'],'icon'=>'project-diagram']);
+echo "			</div>\n";
+echo "		</div>\n";
+
+echo "	</div>\n";
+echo "</form>\n";
+
+// Diagram area
+echo "<div class='card'>\n";
+echo "	<div style='padding: 10px 16px 6px;'>\n";
+echo "		<div class='legend-grid'>\n";
+$legend = [
+	['type' => 'inbound',        'bg' => '#BBDEFB', 'border' => '#1565C0', 'label' => 'Inbound Route'],
+	['type' => 'ivr',            'bg' => '#FFE0B2', 'border' => '#BF360C', 'label' => 'IVR Menu'],
+	['type' => 'ring_group',     'bg' => '#C8E6C9', 'border' => '#1B5E20', 'label' => 'Ring Group'],
+	['type' => 'extension',      'bg' => '#B2EBF2', 'border' => '#006064', 'label' => 'Extension'],
+	['type' => 'call_flow',      'bg' => '#B3E5FC', 'border' => '#01579B', 'label' => 'Call Flow'],
+	['type' => 'time_condition', 'bg' => '#FFF9C4', 'border' => '#F57F17', 'label' => 'Time Condition'],
+	['type' => 'contact_center', 'bg' => '#DCEDC8', 'border' => '#33691E', 'label' => 'Contact Center'],
+	['type' => 'voicemail',      'bg' => '#E1BEE7', 'border' => '#4A148C', 'label' => 'Voicemail'],
+	['type' => 'hangup',         'bg' => '#FFCDD2', 'border' => '#B71C1C', 'label' => 'Hangup'],
+	['type' => 'external',       'bg' => '#E0E0E0', 'border' => '#424242', 'label' => 'External'],
+];
+foreach ($legend as $leg) {
+	echo "			<div class='legend-item'>\n";
+	echo "				<div class='legend-dot' style='background:".escape($leg['bg'])."; border-color:".escape($leg['border']).";'></div>\n";
+	echo "				<span>".escape($leg['label'])."</span>\n";
+	echo "			</div>\n";
+}
+echo "		</div>\n";
+echo "	</div>\n"; // padding div
+
+echo "	<div style='padding: 0 16px 8px;'>\n";
+echo "		<div id='diagram-container'>\n";
+echo "			<div id='diagram-loading'><i class='fas fa-circle-notch fa-spin'></i>&nbsp; Building diagram…</div>\n";
+echo "			<div id='diagram-placeholder'>".escape($text['message-select_destination'] ?? 'Select destination')."</div>\n";
+echo "		</div>\n";
+echo "	</div>\n";
+echo "</div>\n";
+
+echo "</form>\n";
+
 ?>
 
-<div class="action_bar" id="action_bar">
-	<div class="heading"><b><?php echo $text['title-call_flow_map']; ?></b></div>
-	<div class="actions">
-		<?php
-		echo button::create(['type'=>'button','label'=>$text['label-fit_view'],       'icon'=>'compress-arrows-alt','id'=>'btn-fit','collapse'=>'hide-xs','style'=>'display: none;','onclick'=>'fitDiagram()']);
-		echo button::create(['type'=>'button','label'=>$text['label-download_png'],'icon'=>'download',           'id'=>'btn-png','collapse'=>'hide-xs','style'=>'display: none;','onclick'=>'downloadPng()']);
-		?>
-	</div>
-	<div style="clear:both;"></div>
-</div>
-
-<?php echo isset($text['description-call_flow_map']) ? '<p>'.$text['description-call_flow_map'].'</p><br>' : ''; ?>
-
-<!-- ── Picker form ─────────────────────────────────────────────────── -->
-<div class="card" style="margin-bottom: 16px;">
-	<form id="picker-form" method="get" action="" style="padding: 12px 16px;">
-		<div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
-
-			<div>
-				<label class="lbl" for="sel-type" style="display:block; margin-bottom:4px;">
-					<?php echo $text['label-starting_type']; ?>
-				</label>
-				<select id="sel-type" name="type" class="formfld" style="min-width:170px;"
-					onchange="populateDestinations(this.value)">
-					<option value="">-- select type --</option>
-					<?php
-					$types = [
-						'inbound'        => $text['label-inbound_routes'],
-						'ivr'            => $text['label-ivr_menus'],
-						'ring_group'     => $text['label-ring_groups'],
-						'call_flow'      => $text['label-call_flows'],
-						'time_condition' => $text['label-time_conditions'],
-						'extension'      => $text['label-extensions'],
-						'contact_center' => $text['label-contact_centers'],
-					];
-					foreach ($types as $tkey => $tlabel):
-						$sel = ($selected_type === $tkey) ? ' selected' : '';
-					?>
-					<option value="<?php echo escape($tkey); ?>"<?php echo $sel; ?>><?php echo escape($tlabel); ?></option>
-					<?php endforeach; ?>
-				</select>
-			</div>
-
-			<div>
-				<label class="lbl" for="sel-uuid" style="display:block; margin-bottom:4px;">
-					<?php echo $text['label-starting_destination']; ?>
-				</label>
-				<select id="sel-uuid" name="uuid" class="formfld" style="min-width:280px;">
-					<option value="">-- select destination --</option>
-					<?php
-					// Pre-populate if type is already selected
-					if (!empty($selected_type) && !empty($starting_points[$selected_type])):
-						foreach ($starting_points[$selected_type] as $sp):
-							$sel2 = ($selected_uuid === $sp['uuid']) ? ' selected' : '';
-					?>
-					<option value="<?php echo escape($sp['uuid']); ?>"<?php echo $sel2; ?>><?php echo escape($sp['label']); ?></option>
-					<?php
-						endforeach;
-					endif;
-					?>
-				</select>
-			</div>
-
-			<div>
-				<?php echo button::create(['type'=>'submit','label'=>$text['button-generate'],'icon'=>'project-diagram']); ?>
-			</div>
-		</div>
-	</form>
-</div>
-
-<!-- ── Diagram area ────────────────────────────────────────────────── -->
-<div class="card">
-	<!-- Legend -->
-	<div style="padding: 10px 16px 6px;">
-		<div class="legend-grid">
-			<?php
-			$legend = [
-				['type' => 'inbound',        'bg' => '#BBDEFB', 'border' => '#1565C0', 'label' => 'Inbound Route'],
-				['type' => 'ivr',            'bg' => '#FFE0B2', 'border' => '#BF360C', 'label' => 'IVR Menu'],
-				['type' => 'ring_group',     'bg' => '#C8E6C9', 'border' => '#1B5E20', 'label' => 'Ring Group'],
-				['type' => 'extension',      'bg' => '#B2EBF2', 'border' => '#006064', 'label' => 'Extension'],
-				['type' => 'call_flow',      'bg' => '#B3E5FC', 'border' => '#01579B', 'label' => 'Call Flow'],
-				['type' => 'time_condition', 'bg' => '#FFF9C4', 'border' => '#F57F17', 'label' => 'Time Condition'],
-				['type' => 'contact_center', 'bg' => '#DCEDC8', 'border' => '#33691E', 'label' => 'Contact Center'],
-				['type' => 'voicemail',      'bg' => '#E1BEE7', 'border' => '#4A148C', 'label' => 'Voicemail'],
-				['type' => 'hangup',         'bg' => '#FFCDD2', 'border' => '#B71C1C', 'label' => 'Hangup'],
-				['type' => 'external',       'bg' => '#E0E0E0', 'border' => '#424242', 'label' => 'External'],
-			];
-			foreach ($legend as $leg):
-			?>
-			<div class="legend-item">
-				<div class="legend-dot" style="background:<?php echo $leg['bg']; ?>;border-color:<?php echo $leg['border']; ?>;"></div>
-				<span><?php echo escape($leg['label']); ?></span>
-			</div>
-			<?php endforeach; ?>
-		</div>
-	</div>
-
-	<div style="padding: 0 16px 8px;">
-		<div id="diagram-container">
-			<div id="diagram-loading"><i class="fas fa-circle-notch fa-spin"></i>&nbsp; Building diagram…</div>
-			<div id="diagram-placeholder"><?php echo $text['message-select_destination']; ?></div>
-		</div>
-	</div>
-</div>
-
 <script>
-// ── Starting points data (for dynamic population of destination select) ──
-var startingPoints = <?php echo json_encode($starting_points); ?>;
+// Starting points data (for dynamic population of destination select)
+var starting_points = <?php echo json_encode($starting_points); ?>;
 
-// ── Node style map ──
-var nodeStyles = {
+// Node style map
+var node_styles = {
 	inbound:        { color: { background: '#BBDEFB', border: '#1565C0' }, font: { color: '#0D47A1' } },
 	ivr:            { color: { background: '#FFE0B2', border: '#BF360C' }, font: { color: '#BF360C' } },
 	ring_group:     { color: { background: '#C8E6C9', border: '#1B5E20' }, font: { color: '#1B5E20' } },
@@ -280,12 +269,12 @@ var nodeStyles = {
 
 var network = null;
 
-// ── Populate destination dropdown when type changes ──
+// Populate destination dropdown when type changes
 function populateDestinations(type) {
 	var sel = document.getElementById('sel-uuid');
 	sel.innerHTML = '<option value="">-- select destination --</option>';
-	if (!type || !startingPoints[type]) return;
-	startingPoints[type].forEach(function(item) {
+	if (!type || !starting_points[type]) return;
+	starting_points[type].forEach(function(item) {
 		var opt = document.createElement('option');
 		opt.value = item.uuid;
 		opt.textContent = item.label;
@@ -293,10 +282,10 @@ function populateDestinations(type) {
 	});
 }
 
-// ── Build diagram from JSON data ──
-function renderDiagram(data) {
+// Build diagram from JSON data
+function render_diagram(data) {
 	var placeholder  = document.getElementById('diagram-placeholder');
-	var loadingEl    = document.getElementById('diagram-loading');
+	var loading_element    = document.getElementById('diagram-loading');
 	var container    = document.getElementById('diagram-container');
 	placeholder.style.display = 'none';
 	document.getElementById('btn-fit').style.display = 'none';
@@ -308,9 +297,8 @@ function renderDiagram(data) {
 		return;
 	}
 
-	// Build styled node and edge arrays (kept as plain arrays for reuse in phase 2)
-	var styledNodes = data.nodes.map(function(n) {
-		var style = nodeStyles[n.type] || nodeStyles['external'];
+	var styled_nodes = data.nodes.map(function(n) {
+		var style = node_styles[n.type] || node_styles['external'];
 		var props = Object.assign({}, n, style, {
 			shape: 'box',
 			margin: { top: 8, bottom: 8, left: 10, right: 10 },
@@ -322,7 +310,7 @@ function renderDiagram(data) {
 		return props;
 	});
 
-	var styledEdges = data.edges.map(function(e) {
+	var styled_edges = data.edges.map(function(e) {
 		return Object.assign({}, e, {
 			arrows: { to: { enabled: true, scaleFactor: 0.6, type: 'arrow' } },
 			font:   { size: 11, align: 'middle', color: '#444', strokeWidth: 2, strokeColor: '#fff' },
@@ -332,13 +320,11 @@ function renderDiagram(data) {
 		});
 	});
 
-	// Phase 1: hierarchical layout using node `level` properties for correct row alignment.
-	// Interaction is disabled during this phase — it's purely for computing positions.
-	loadingEl.style.display = 'flex';
+	loading_element.style.display = 'flex';
 	if (network) { network.destroy(); network = null; }
 
 	network = new vis.Network(container,
-		{ nodes: new vis.DataSet(styledNodes), edges: new vis.DataSet(styledEdges) },
+		{ nodes: new vis.DataSet(styled_nodes), edges: new vis.DataSet(styled_edges) },
 		{
 			layout: {
 				hierarchical: {
@@ -355,7 +341,7 @@ function renderDiagram(data) {
 			},
 			physics: {
 				enabled: true,
-				solver:  'hierarchicalRepulsion',
+				solver: 'hierarchicalRepulsion',
 				hierarchicalRepulsion: { nodeDistance: 80, avoidOverlap: 1, damping: 0.12 },
 				stabilization: { enabled: true, iterations: 300 },
 			},
@@ -364,20 +350,17 @@ function renderDiagram(data) {
 	);
 
 	network.once('stabilized', function() {
-		// Capture positions computed by the hierarchical layout
 		var positions = network.getPositions();
 		network.destroy();
 		network = null;
 
-		// Phase 2: free layout — no hierarchical constraints, so nodes can be dragged
-		// in any direction. Positions from phase 1 are baked in as starting coordinates.
-		var freeNodes = styledNodes.map(function(n) {
+		var free_nodes = styled_nodes.map(function(n) {
 			var pos = positions[n.id] || { x: 0, y: 0 };
 			return Object.assign({}, n, { x: pos.x, y: pos.y });
 		});
 
 		network = new vis.Network(container,
-			{ nodes: new vis.DataSet(freeNodes), edges: new vis.DataSet(styledEdges) },
+			{ nodes: new vis.DataSet(free_nodes), edges: new vis.DataSet(styled_edges) },
 			{
 				layout:    { hierarchical: { enabled: false } },
 				physics:   { enabled: false },
@@ -385,55 +368,48 @@ function renderDiagram(data) {
 			}
 		);
 
-		var nodeMap = {};
-		freeNodes.forEach(function(n) { nodeMap[n.id] = n; });
+		var node_map = {};
+		free_nodes.forEach(function(n) { node_map[n.id] = n; });
 
 		network.on('doubleClick', function(params) {
 			if (params.nodes.length === 0) return;
 			var nodeId = params.nodes[0];
-			var node   = nodeMap[nodeId];
-			var url    = (node && node.edit_url) || nodeEditUrl(nodeId);
+			var node   = node_map[nodeId];
+			var url    = (node && node.edit_url) || node_edit_url(nodeId);
 			if (url) window.open(url, '_blank');
 		});
 
-		loadingEl.style.display = 'none';
+		loading_element.style.display = 'none';
 		network.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
 		document.getElementById('btn-fit').style.display = '';
 		document.getElementById('btn-png').style.display = '';
 	});
 }
 
-// ── Resolve an edit URL from a node ID ──
-function nodeEditUrl(nodeId) {
+// Resolve an edit URL from a node ID
+function node_edit_url(nodeId) {
 	var uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 	var m;
-	if ((m = nodeId.match(new RegExp('^inbound_(' + uuid + ')$', 'i'))))
-		return '/app/destinations/destination_edit.php?id=' + m[1];
-	if ((m = nodeId.match(new RegExp('^ivr_(' + uuid + ')$', 'i'))))
-		return '/app/ivr_menus/ivr_menu_edit.php?id=' + m[1];
-	if ((m = nodeId.match(new RegExp('^rg_(' + uuid + ')$', 'i'))))
-		return '/app/ring_groups/ring_group_edit.php?id=' + m[1];
-	if ((m = nodeId.match(new RegExp('^cf_(' + uuid + ')$', 'i'))))
-		return '/app/call_flows/call_flow_edit.php?id=' + m[1];
-	if ((m = nodeId.match(new RegExp('^tc_(' + uuid + ')$', 'i'))))
-		return '/app/time_conditions/time_condition_edit.php?id=' + m[1];
-	if ((m = nodeId.match(new RegExp('^ext_(' + uuid + ')$', 'i'))))
-		return '/app/extensions/extension_edit.php?id=' + m[1];
-	if ((m = nodeId.match(new RegExp('^cc_(' + uuid + ')$', 'i'))))
-		return '/app/call_centers/call_center_queue_edit.php?id=' + m[1];
+	if ((m = nodeId.match(new RegExp('^inbound_(' + uuid + ')$', 'i')))) return '/app/destinations/destination_edit.php?id=' + m[1];
+	if ((m = nodeId.match(new RegExp('^ivr_(' + uuid + ')$', 'i'))))   return '/app/ivr_menus/ivr_menu_edit.php?id=' + m[1];
+	if ((m = nodeId.match(new RegExp('^rg_(' + uuid + ')$', 'i'))))   return '/app/ring_groups/ring_group_edit.php?id=' + m[1];
+	if ((m = nodeId.match(new RegExp('^cf_(' + uuid + ')$', 'i'))))   return '/app/call_flows/call_flow_edit.php?id=' + m[1];
+	if ((m = nodeId.match(new RegExp('^tc_(' + uuid + ')$', 'i'))))   return '/app/time_conditions/time_condition_edit.php?id=' + m[1];
+	if ((m = nodeId.match(new RegExp('^ext_(' + uuid + ')$', 'i'))))  return '/app/extensions/extension_edit.php?id=' + m[1];
+	if ((m = nodeId.match(new RegExp('^cc_(' + uuid + ')$', 'i'))))   return '/app/call_centers/call_center_queue_edit.php?id=' + m[1];
 	return null;
 }
 
-function fitDiagram() {
+function fit_diagram() {
 	if (network) network.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
 }
 
-function downloadPng() {
+function download_png() {
 	if (!network) return;
 	modal_open('modal-png-export', 'btn-png');
 }
 
-function doDownloadPng(withBackground) {
+function dodownload_png(with_background) {
 	var src = document.querySelector('#diagram-container canvas');
 	if (!src) return;
 
@@ -442,7 +418,7 @@ function doDownloadPng(withBackground) {
 	canvas.height = src.height;
 	var ctx = canvas.getContext('2d');
 
-	if (withBackground) {
+	if (with_background) {
 		ctx.fillStyle = '#ffffff';
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 	}
@@ -455,12 +431,12 @@ function doDownloadPng(withBackground) {
 }
 
 <?php if (!empty($diagram_json) && $diagram_json !== 'null'): ?>
-// ── Render pre-loaded diagram ──
+// Render pre-loaded diagram
 document.addEventListener('DOMContentLoaded', function() {
-	renderDiagram(<?php echo $diagram_json; ?>);
+	render_diagram(<?php echo $diagram_json; ?>);
 });
 <?php endif; ?>
-
 </script>
 
-<?php require_once "resources/footer.php"; ?>
+<?php
+require_once "resources/footer.php";
