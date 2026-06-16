@@ -78,7 +78,7 @@
 	}
 
 //page title
-	$document['title'] = $text['title-call_flow_map'] ?? 'Call Flow Diagram';
+	$document['title'] = $text['title-call_flow_map'];
 	require_once "resources/header.php";
 
 ?>
@@ -147,7 +147,7 @@
 echo modal::create([
 	'id'      => 'modal-png-export',
 	'type'    => 'general',
-	'title'   => $text['label-png_background'] ?? 'Export background',
+	'title'   => $text['label-png_background'],
 	'actions' =>
 		button::create(['type'=>'button','label'=>'White',       'icon'=>'square',       'id'=>'btn-png-white',        'collapse'=>'never','onclick'=>"modal_close(); doDownloadPng(true);"]).
 		button::create(['type'=>'button','label'=>'Transparent', 'icon'=>'border-all',   'id'=>'btn-png-transparent',  'collapse'=>'never','onclick'=>"modal_close(); doDownloadPng(false);"]),
@@ -155,11 +155,11 @@ echo modal::create([
 ?>
 
 <div class="action_bar" id="action_bar">
-	<div class="heading"><b><?php echo $text['title-call_flow_map'] ?? 'Call Flow Diagram'; ?></b></div>
+	<div class="heading"><b><?php echo $text['title-call_flow_map']; ?></b></div>
 	<div class="actions">
 		<?php
-		echo button::create(['type'=>'button','label'=>$text['label-fit_view']??'Fit View',       'icon'=>'compress-arrows-alt','id'=>'btn-fit','collapse'=>'hide-xs','style'=>'display: none;','onclick'=>'fitDiagram()']);
-		echo button::create(['type'=>'button','label'=>$text['label-download_png']??'Download PNG','icon'=>'download',           'id'=>'btn-png','collapse'=>'hide-xs','style'=>'display: none;','onclick'=>'downloadPng()']);
+		echo button::create(['type'=>'button','label'=>$text['label-fit_view'],       'icon'=>'compress-arrows-alt','id'=>'btn-fit','collapse'=>'hide-xs','style'=>'display: none;','onclick'=>'fitDiagram()']);
+		echo button::create(['type'=>'button','label'=>$text['label-download_png'],'icon'=>'download',           'id'=>'btn-png','collapse'=>'hide-xs','style'=>'display: none;','onclick'=>'downloadPng()']);
 		?>
 	</div>
 	<div style="clear:both;"></div>
@@ -174,20 +174,20 @@ echo modal::create([
 
 			<div>
 				<label class="lbl" for="sel-type" style="display:block; margin-bottom:4px;">
-					<?php echo $text['label-starting_type'] ?? 'Starting Type'; ?>
+					<?php echo $text['label-starting_type']; ?>
 				</label>
 				<select id="sel-type" name="type" class="formfld" style="min-width:170px;"
 					onchange="populateDestinations(this.value)">
 					<option value="">-- select type --</option>
 					<?php
 					$types = [
-						'inbound'        => $text['label-inbound_routes']    ?? 'Inbound Routes',
-						'ivr'            => $text['label-ivr_menus']         ?? 'IVR Menus',
-						'ring_group'     => $text['label-ring_groups']        ?? 'Ring Groups',
-						'call_flow'      => $text['label-call_flows']         ?? 'Call Flows',
-						'time_condition' => $text['label-time_conditions']    ?? 'Time Conditions',
-						'extension'      => $text['label-extensions']         ?? 'Extensions',
-						'contact_center' => $text['label-contact_centers']    ?? 'Contact Centers',
+						'inbound'        => $text['label-inbound_routes'],
+						'ivr'            => $text['label-ivr_menus'],
+						'ring_group'     => $text['label-ring_groups'],
+						'call_flow'      => $text['label-call_flows'],
+						'time_condition' => $text['label-time_conditions'],
+						'extension'      => $text['label-extensions'],
+						'contact_center' => $text['label-contact_centers'],
 					];
 					foreach ($types as $tkey => $tlabel):
 						$sel = ($selected_type === $tkey) ? ' selected' : '';
@@ -199,7 +199,7 @@ echo modal::create([
 
 			<div>
 				<label class="lbl" for="sel-uuid" style="display:block; margin-bottom:4px;">
-					<?php echo $text['label-starting_destination'] ?? 'Destination'; ?>
+					<?php echo $text['label-starting_destination']; ?>
 				</label>
 				<select id="sel-uuid" name="uuid" class="formfld" style="min-width:280px;">
 					<option value="">-- select destination --</option>
@@ -218,7 +218,7 @@ echo modal::create([
 			</div>
 
 			<div>
-				<?php echo button::create(['type'=>'submit','label'=>$text['button-generate']??'Generate Diagram','icon'=>'project-diagram']); ?>
+				<?php echo button::create(['type'=>'submit','label'=>$text['button-generate'],'icon'=>'project-diagram']); ?>
 			</div>
 		</div>
 	</form>
@@ -255,7 +255,7 @@ echo modal::create([
 	<div style="padding: 0 16px 8px;">
 		<div id="diagram-container">
 			<div id="diagram-loading"><i class="fas fa-circle-notch fa-spin"></i>&nbsp; Building diagram…</div>
-			<div id="diagram-placeholder"><?php echo $text['message-select_destination'] ?? 'Select a starting destination above and click Generate Diagram.'; ?></div>
+			<div id="diagram-placeholder"><?php echo $text['message-select_destination']; ?></div>
 		</div>
 	</div>
 </div>
@@ -303,7 +303,7 @@ function renderDiagram(data) {
 	document.getElementById('btn-png').style.display = 'none';
 
 	if (!data || !data.nodes || data.nodes.length === 0) {
-		placeholder.textContent = <?php echo json_encode($text['message-no_data'] ?? 'No routing data found.'); ?>;
+		placeholder.textContent = <?php echo json_encode($text['message-no_data']); ?>;
 		placeholder.style.display = 'flex';
 		return;
 	}
